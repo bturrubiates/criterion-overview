@@ -13,7 +13,8 @@
   <meta name="apple-mobile-web-app-status-bar-style"
   content="black-translucent" />
 
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,
+  maximum-scale=1.0, user-scalable=no, minimal-ui">
 
   <link rel="stylesheet" href="reveal/css/reveal.css">
   <link rel="stylesheet" href="reveal/css/theme/moon.css" id="theme">
@@ -32,68 +33,332 @@
     }
   </script>
 
-    <!--[if lt IE 9]>
-    <script src="lib/js/html5shiv.js"></script>
-    <![endif]-->
-  </head>
+  <!--[if lt IE 9]>
+  <script src="lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
 
-  <body>
+<body>
 
-    <div class="reveal">
-      <div class="slides">
-        <section>
-          <h1>Testing with Criterion</h1>
-          <h3>An introduction to the Criterion test framework.</h3>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1>Testing with Criterion</h1>
+        <h3>An introduction to the Criterion test framework.</h3>
+        <p>
+          <small>
+            <a href="http://turrubiat.es">Benjamin Turrubiates</a>
+            / bturrubiates@lanl.gov
+          </small>
+        </p>
+      </section>
+
+      <section>
+        <h2>Criterion</h2>
+        <p>
+          <ul>
+            <li>
+              Easily specify unit tests that may have a setup and teardown
+              phase.
+            </li>
+            <li>
+              Tests can be enabled/disabled or filtered.
+            </li>
+            <li>
+              Output can be specified in TAP format.
+            </li>
+            <li>
+              Can be downloaded from github.com/Snaipe/criterion.
+            </li>
+          </ul>
+        </p>
+      </section>
+
+      <section>
+          <section>
+          <h2>Specifying Tests</h2>
           <p>
-            <small>
-              <a href="http://turrubiat.es">Benjamin Turrubiates</a>
-              / bturrubiates@lanl.gov
-            </small>
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+#include &lt;criterion/criterion.h&gt;
+
+Test(suite_name, test_name) {
+  /* Test goes here. */
+}
+            </code></pre>
+          Suites can have many tests. Tests are sorted by suite, then
+          alphabetically by test name.
           </p>
         </section>
+
         <section>
-          <h2>Criterion</h2>
+          <h2>Specifying Tests</h2>
           <p>
+            Test suites can take various parameters.
+            <table>
+              <tr>
+                <td>Name</td>
+                <td>Type</td>
+              </tr>
+              <tr>
+                <td>init</td>
+                <td>void (*)(void)</td>
+              <tr>
+              <tr>
+                <td>fini</td>
+                <td>void (*)(void)</td>
+              <tr>
+              <tr>
+                <td>signal</td>
+                <td>int</td>
+              <tr>
+              <tr>
+                <td>disabled</td>
+                <td>bool</td>
+              <tr>
+              <tr>
+                <td>description</td>
+                <td>const char *</td>
+              <tr>
+            </table>
+          </p>
+        </section>
+
+        <section>
+          <h2>init</h2>
+          <p>
+            Specify function to run before test execution.
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+int x;
+
+void setup(void)
+{
+    x = 5;
+}
+
+Test(equality, equal_five, .init = setup)
+{
+    assert(x == 5);
+}
+            </code></pre>
+          </p>
+        </section>
+
+        <section>
+          <h2>fini</h2>
+          <p>
+            Specify function to run after test execution.
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+int *x;
+
+void setup(void)
+{
+    x = malloc(sizeof(*x));
+    *x = 5;
+}
+
+void teardown(void)
+{
+    free(x);
+}
+
+Test(equality, equal_five, .init = setup, .fini = teardown)
+{
+    assert(x == 5);
+}
+            </code></pre>
+          </p>
+        </section>
+
+        <section>
+          <h2>disabled and description</h2>
+          <p>
+            Disabled controls whether a test executes.
+
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+Test(equality, fail, .description="0 fails", .disabled = true)
+{
+    assert(0);
+}
+            </code></pre>
+          </p>
+        </section>
+
+        <section>
+          <h2>signal</h2>
+          <p>
+            Specify that a test should throw a specific signal.
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+#include &lt;signal.h&gt;
+
+Test(signals, sigsegv, .signal = SIGSEGV)
+{
+    raise(SIGSEGV);
+}
+            </code></pre>
+          </p>
+        </section>
+
+        <section>
+          <h2>Test Suite Configurations</h2>
+          <p>
+            Parameters can be set for all tests of a suite.
+            <pre><code class="c" data-trim contenteditable style="font-size:
+            18px;">
+int *x;
+void setup(void)
+{
+    x = malloc(sizeof(*x));
+    *x = 2;
+}
+
+TestSuite(equality, .init = setup);
+
+Test(equality, fail)
+{
+    assert(*x == 1);
+}
+            </code></pre>
+          </p>
+        </section>
+      </section>
+
+      <section>
+        <section>
+          <h2>Asserting or expecting behavior</h2>
+          <p>
+            Assertions come in two families:
             <ul>
               <li>
-                Easily specify unit tests that may have a setup and teardown
-                phase.
+                assert* are assertions that cause an immediate test failure upon
+                condition evaluating to false.
               </li>
               <li>
-                Tests can be enabled/disabled or filtered.
-              </li>
-              <li>
-                Output can be specified in TAP format.
-              </li>
-              <li>
-                Can be downloaded from github.com/Snaipe/criterion.
+                expect* are assertions that are not fatal and continue execution.
+                The test is still marked as false, but execution doesn't end at
+                failed expect assertion.
               </li>
             </ul>
           </p>
         </section>
-      </div>
+
+        <section>
+          <h2>General assertion functions</h2>
+          <p>
+            Of form function(Actual, Comparison, [Message])
+            <ul>
+              <li>{assert, expect}_{not, eq, neq, lt, leq, gt, geq}</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h2>Floating point assertion functions</h2>
+          <p>
+             Of form function(Actual, Comparison, Tolerance, [Message])
+            <ul>
+              <li>{assert, expect}_float_{eq, neq}</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h2>String assertion functions</h2>
+          <p>
+            Of form function(Actual, Comparison, [Message])
+            <ul>
+              <li>{assert, expect}_strings_{eq, neq, lt, leq, gt, geq}</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h2>Array assertion functions</h2>
+          <p>
+            Of form function(Actual, Comparison, Size, [Message])
+            <ul>
+              <li>{assert, expect}_arrays_{eq, neq}</li>
+            </ul>
+          </p>
+        </section>
+      </section>
+
+      <section>
+        <section>
+          <h2>Useful command line options</h2>
+          <p>
+            <ul>
+              <li>--list</li>
+              <li>--ascii</li>
+              <li>--pattern [PATTERN]</li>
+              <li>--no-early-exit</li>
+              <li>--always-succeed</li>
+              <li>--tap</li>
+              <li>--verbose</li>
+              <li>--fail-fast</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h2>Pattern example</h2>
+          <p>
+          <pre><code class="bash" data-trim contenteditable style="font-size:
+          18px;">
+./test --pattern "suite/*"
+          </code></pre>
+          </p>
+        </section>
+      </section>
+
+      <section>
+        <h2>Building</h2>
+        <p>
+          Criterion is distributed as a static library:
+          <pre><code class="bash" data-trim contenteditable style="font-size:
+          18px;">
+gcc -lcriterion -o test test.c
+          </code></pre>
+        </p>
+      </section>
+
+      <section>
+        <h2>Resources</h2>
+        <p>
+          Data from http://criterion.readthedocs.org/en/latest/env.html
+        </p>
+      </section>
     </div>
+  </div>
 
-    <script src="reveal/lib/js/head.min.js"></script>
-    <script src="reveal/js/reveal.js"></script>
+  <script src="reveal/lib/js/head.min.js"></script>
+  <script src="reveal/js/reveal.js"></script>
 
-    <script>
-      Reveal.initialize({
-        controls: true,
-        progress: true,
-        history: true,
-        center: true,
+  <script>
+    Reveal.initialize({
+      controls: true,
+      progress: true,
+      history: true,
+      center: true,
 
-        theme: Reveal.getQueryHash().theme,
-        transition: Reveal.getQueryHash().transition || 'default',
+      theme: Reveal.getQueryHash().theme,
+      transition: Reveal.getQueryHash().transition || 'default',
 
-        dependencies: [
-        { src: 'reveal/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-        { src: 'reveal/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-        { src: 'reveal/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
-        { src: 'reveal/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
-        ]
-      });
-    </script>
-  </body>
-  </html>
+      dependencies: [
+      { src: 'reveal/lib/js/classList.js', condition: function() { return
+          !document.body.classList; } },
+      { src: 'reveal/plugin/highlight/highlight.js', async: true, callback:
+        function() { hljs.initHighlightingOnLoad(); } },
+      { src: 'reveal/plugin/zoom-js/zoom.js', async: true, condition:
+        function() { return !!document.body.classList; } },
+      { src: 'reveal/plugin/notes/notes.js', async: true, condition:
+        function() { return !!document.body.classList; } }
+      ]
+    });
+  </script>
+</body>
+</html>
